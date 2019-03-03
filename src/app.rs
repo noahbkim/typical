@@ -1,21 +1,11 @@
 extern crate piston_window;
 
-use std::time::Instant;
 use piston_window::*;
-use piston_window::character::CharacterCache;
+use piston_window::character::*;
 
 use crate::settings::Settings;
-
-
-pub struct Metrics {
-    mistakes: u32,
-    start: Instant,
-}
-
-pub struct Drawing {
-    width: f64,
-    height: f64,
-}
+use crate::geometry::Geometry;
+use crate::metrics::Metrics;
 
 pub struct App {
     window: PistonWindow,
@@ -24,11 +14,11 @@ pub struct App {
 
     // Mechanics
     metrics: Metrics,
-    drawing: Drawing,
+    geometry: Geometry,
 
     // Game
     text: String,
-    cursor: u32,
+    cursor: usize,
     wrong: bool,
 }
 
@@ -37,14 +27,9 @@ impl App {
         let window: PistonWindow = WindowSettings::new("Typical", [settings.width, settings.height]).build().unwrap();
         let glyphs: Glyphs = Glyphs::new(&settings.font, window.factory.clone(), TextureSettings::new()).unwrap();
         let mut app: App = App {
-            window,
-            glyphs,
-            settings,
-            metrics: Metrics { mistakes: 0, start: Instant::now() },
-            drawing: Drawing { width: 0.0, height: 0.0 },
-            text: String::new(),
-            cursor: 0,
-            wrong: false
+            window, glyphs, settings,
+            metrics: Metrics::new(), geometry: Geometry::new(),
+            text: String::new(), cursor: 4, wrong: true
         };
         app.next();
         app
@@ -53,26 +38,45 @@ impl App {
     pub fn run(&mut self) {
         self.window.set_lazy(true);
         let settings: &Settings = &self.settings;
-        let drawing: &Drawing = &self.drawing;
+        let geometry: &Geometry = &self.geometry;
         let text: &mut String = &mut self.text;
         let glyphs: &mut Glyphs = &mut self.glyphs;
+        let cursor: &mut usize = &mut self.cursor;
+        let wrong: &mut bool = &mut self.wrong;
 
         while let Some(event) = self.window.next() {
             self.window.draw_2d(&event, |context, graphics| {
                 clear(settings.background, graphics);
 
-                let transform = context.transform.trans(
-                    (settings.width as f64 - drawing.width) / 2.0,
-                    (settings.height as f64 + drawing.height) / 2.0);
+                let origin = context.transform.trans(
+                    (settings.width as f64 - geometry.width) / 2.0,
+                    (settings.height as f64 + geometry.height) / 2.0);
+                let mut x: f64 = 0.0;
 
-                text::Text::new_color(settings.foreground, 24).draw(
-                    text,
-                    glyphs,
-                    &context.draw_state,
-                    transform,
-                    graphics
-                ).unwrap();
+                let mut image = Image::new_color(settings.completed);
+                for (i, character) in text.chars().enumerate() {
+                    let glyph = glyphs.character(settings.size, character).unwrap();
 
+                    if i == *cursor {
+                        let color = if *wrong { settings.wrong } else { settings.active };
+                        ellipse(color, [glyph.width() / 2.0 - 2.0, 7.0, 4.0, 4.0], origin.trans(x, 0.0), graphics);
+                        image = Image::new_color(color);
+                    }
+
+                    image.draw(glyph.texture, &context.draw_state, origin.trans(x, -glyph.top()), graphics);
+                    x += glyph.width();
+
+                    if i == *cursor {
+                        image = Image::new_color(settings.active);
+                    }
+                }
+
+                match event.text_args() {
+                    Some(text) => {
+                        println!("{}", text)
+                    },
+                    None => {}
+                }
             });
         }
     }
@@ -80,20 +84,7 @@ impl App {
     pub fn next(&mut self) {
         self.text.clear();
         self.text.push_str("Hello, world!");
-        self.compute();
+        self.geometry.compute(&mut self.glyphs, self.settings.size, &self.text);
     }
 
-    fn compute(&mut self) {
-        self.drawing.height = if self.text.len() > 0 {
-             self.glyphs.character(self.settings.size, self.text.chars().next().unwrap()).unwrap().top()
-        } else {
-            0.0
-        };
-
-        self.drawing.width = 0.0;
-        for character in self.text.chars() {
-            let glyph = self.glyphs.character(self.settings.size, character).unwrap();
-            self.drawing.width += glyph.width();
-        }
-    }
 }
