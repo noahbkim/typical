@@ -26,7 +26,7 @@ pub struct App {
 
 impl App {
     pub fn new(settings: Settings) -> App {
-        let window: PistonWindow = WindowSettings::new("Typical", [settings.width, settings.height]).exit_on_esc(true).build().unwrap();
+        let window: PistonWindow = WindowSettings::new("Typical", [settings.width, settings.height]).build().unwrap();
         let glyphs: Glyphs = Glyphs::new(&settings.font, window.factory.clone(), TextureSettings::new()).unwrap();
         let mut app: App = App {
             window,
@@ -48,18 +48,18 @@ impl App {
         while let Some(event) = self.window.next() {
             match event.text_args() {
                 Some(text) => {
-                    if self.cursor != self.text.len() && text.len() > 0 && text.chars().next().unwrap() == self.text.chars().nth(self.cursor).unwrap() {
+                    if text.len() > 0 && text.chars().next().unwrap() == self.text.chars().nth(self.cursor).unwrap() {
                         self.wrong = false;
                         self.cursor += 1;
+                        if self.cursor == self.text.len() {
+                            self.next();
+                        }
                     } else {
                         self.wrong = true;
                         self.metrics.mistakes += 1;
                     }
                 },
                 None => {}
-            }
-            if event.press_args() == Some(Button::Keyboard(Key::Return)) && self.cursor == self.text.len() {
-                self.next();
             }
             self.draw(&event);
         }
@@ -74,6 +74,11 @@ impl App {
     }
 
     pub fn draw(&mut self, event: &Event) {
+        self.draw_words(event);
+    }
+
+    pub fn draw_words(&mut self, event: &Event) {
+        let size: Size = self.window.size();
         let settings: &Settings = &self.settings;
         let geometry: &Geometry = &self.geometry;
         let text: &String = &self.text;
@@ -85,8 +90,8 @@ impl App {
             clear(settings.background, graphics);
 
             let origin = context.transform.trans(
-                (settings.width as f64 - geometry.width) / 2.0,
-                (settings.height as f64 + geometry.height) / 2.0 - 3.0);
+                (size.width as f64 - geometry.width) / 2.0,
+                (size.height as f64 + geometry.height) / 2.0 - 3.0);
             let mut x: f64 = 0.0;
 
             let mut image = Image::new_color(settings.completed);
@@ -95,11 +100,11 @@ impl App {
 
                 if i == *cursor {
                     let color = if *wrong { settings.wrong } else { settings.active };
-                    ellipse(color, [glyph.width() / 2.0 - 2.0, 7.0, 4.0, 4.0], origin.trans(x, 0.0), graphics);
+                    ellipse(color, [(glyph.width() / 2.0).round() - 2.0, 7.0, 4.0, 4.0], origin.trans(x.round(), 0.0), graphics);
                     image = Image::new_color(color);
                 }
 
-                image.draw(glyph.texture, &context.draw_state, origin.trans(x, -glyph.top()), graphics);
+                image.draw(glyph.texture, &context.draw_state, origin.trans(x.round(), -glyph.top().round()), graphics);
                 x += glyph.width();
 
                 if i == *cursor {
