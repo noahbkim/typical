@@ -1,7 +1,7 @@
 mod settings;
-mod words;
+mod phrase;
 mod geometry;
-mod metrics;
+mod dictionary;
 mod app;
 
 use settings::Settings;
@@ -15,7 +15,7 @@ fn main() {
         wrong: [1.0, 0.0, 0.0, 1.0],
         completed: [0.5, 0.5, 0.5, 1.0],
         background: [1.0; 4],
-        font: String::from("assets/firacode.ttf"),
-        size: 24,
+        font: String::from("assets/ubuntu.ttf"),
+        size: 28,
     }).run();
 }

@@ -4,9 +4,9 @@ use piston_window::*;
 use piston_window::character::*;
 
 use crate::settings::Settings;
+use crate::phrase::Phrase;
+use crate::dictionary::Dictionary;
 use crate::geometry::Geometry;
-use crate::metrics::Metrics;
-use crate::words::Words;
 
 pub struct App {
     window: PistonWindow,
@@ -14,63 +14,41 @@ pub struct App {
     settings: Settings,
 
     // Mechanics
-    words: Words,
-    metrics: Metrics,
+    phrase: Phrase,
+    dictionary: Dictionary,
     geometry: Geometry,
-
-    // Game
-    text: String,
-    cursor: usize,
-    wrong: bool,
 }
 
 impl App {
     pub fn new(settings: Settings) -> App {
         let window: PistonWindow = WindowSettings::new("Typical", [settings.width, settings.height]).build().unwrap();
         let glyphs: Glyphs = Glyphs::new(&settings.font, window.factory.clone(), TextureSettings::new()).unwrap();
-        let mut app: App = App {
+        App {
             window,
             glyphs,
             settings,
-            words: Words::new(),
-            metrics: Metrics::new(),
+            phrase: Phrase::new(),
+            dictionary: Dictionary::new(),
             geometry: Geometry::new(),
-            text: String::new(),
-            cursor: 0,
-            wrong: false
-        };
-        app.next();
-        app
+        }
     }
 
     pub fn run(&mut self) {
         self.window.set_lazy(true);
         while let Some(event) = self.window.next() {
-            match event.text_args() {
-                Some(text) => {
-                    if text.len() > 0 && text.chars().next().unwrap() == self.text.chars().nth(self.cursor).unwrap() {
-                        self.wrong = false;
-                        self.cursor += 1;
-                        if self.cursor == self.text.len() {
-                            self.next();
-                        }
-                    } else {
-                        self.wrong = true;
-                        self.metrics.mistakes += 1;
-                    }
-                },
-                None => {}
+            if let Some(text) = event.text_args() {
+                self.phrase.text(text);
+            }
+            if self.phrase.done() {
+                self.next();
             }
             self.draw(&event);
         }
     }
 
     pub fn next(&mut self) {
-        self.text.clear();
-        self.text.push_str("Hello, world!");
-        self.cursor = 0;
-        self.wrong = false;
-        self.geometry.compute(&mut self.glyphs, self.settings.size, &self.text);
+        self.phrase.next(String::from("Hello, world!"));
+        self.geometry.compute(&mut self.glyphs, self.settings.size, &self.phrase.text);
     }
 
     pub fn draw(&mut self, event: &Event) {
@@ -78,13 +56,13 @@ impl App {
     }
 
     pub fn draw_words(&mut self, event: &Event) {
-        let size: Size = self.window.size();
+        let glyphs: &mut Glyphs = &mut self.glyphs;
         let settings: &Settings = &self.settings;
         let geometry: &Geometry = &self.geometry;
-        let text: &String = &self.text;
-        let glyphs: &mut Glyphs = &mut self.glyphs;
-        let cursor: &usize = &self.cursor;
-        let wrong: &bool = &self.wrong;
+        let size: Size = self.window.size();
+        let text: &String = &self.phrase.text;
+        let cursor: &usize = &self.phrase.cursor;
+        let wrong: &bool = &self.phrase.wrong;
 
         self.window.draw_2d(event, |context, graphics| {
             clear(settings.background, graphics);
@@ -100,7 +78,7 @@ impl App {
 
                 if i == *cursor {
                     let color = if *wrong { settings.wrong } else { settings.active };
-                    ellipse(color, [(glyph.width() / 2.0).round() - 2.0, 7.0, 4.0, 4.0], origin.trans(x.round(), 0.0), graphics);
+                    rectangle(color, [0.0, 6.0, glyph.width().round(), 3.0], origin.trans(x.round(), 0.0), graphics);
                     image = Image::new_color(color);
                 }
 
