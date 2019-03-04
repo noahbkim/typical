@@ -2,8 +2,8 @@ use std::time::Instant;
 
 
 pub struct Metrics {
-    mistakes: u32,
-    start: Instant,
+    pub mistakes: u32,
+    pub start: Instant,
 }
 
 impl Metrics {
