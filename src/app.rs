@@ -12,8 +12,6 @@ pub struct App {
     window: PistonWindow,
     glyphs: Glyphs,
     settings: Settings,
-
-    // Mechanics
     phrase: Phrase,
     dictionary: Dictionary,
     geometry: Geometry,
@@ -21,7 +19,10 @@ pub struct App {
 
 impl App {
     pub fn new(settings: Settings) -> App {
-        let window: PistonWindow = WindowSettings::new("Typical", [settings.width, settings.height]).build().unwrap();
+        let window: PistonWindow = WindowSettings::new("Typical", [settings.width, settings.height])
+            .opengl(OpenGL::V4_5)
+            .build()
+            .unwrap();
         let glyphs: Glyphs = Glyphs::new(&settings.font, window.factory.clone(), TextureSettings::new()).unwrap();
         App {
             window,
@@ -78,11 +79,11 @@ impl App {
 
                 if i == *cursor {
                     let color = if *wrong { settings.wrong } else { settings.active };
-                    rectangle(color, [0.0, 6.0, glyph.width().round(), 3.0], origin.trans(x.round(), 0.0), graphics);
+                    rectangle(color, [0.0, 6.0, glyph.width().round(), 2.0], origin.trans(x.round(), 0.0), graphics);
                     image = Image::new_color(color);
                 }
 
-                image.draw(glyph.texture, &context.draw_state, origin.trans(x.round(), -glyph.top().round()), graphics);
+                image.draw(glyph.texture, &context.draw_state, origin.trans((x + glyph.left()).round(), -glyph.top().round()), graphics);
                 x += glyph.width();
 
                 if i == *cursor {

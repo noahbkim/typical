@@ -16,6 +16,6 @@ fn main() {
         completed: [0.5, 0.5, 0.5, 1.0],
         background: [1.0; 4],
         font: String::from("assets/ubuntu.ttf"),
-        size: 28,
+        size: 24,
     }).run();
 }
