@@ -10,3 +10,9 @@ pub struct Settings {
     pub font: String,
     pub size: FontSize,
 }
+
+impl Settings {
+    pub fn load(path: String) {
+
+    }
+}

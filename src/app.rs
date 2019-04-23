@@ -5,7 +5,7 @@ use piston_window::character::*;
 
 use crate::settings::Settings;
 use crate::phrase::Phrase;
-use crate::dictionary::Dictionary;
+use crate::dictionary::{load_dictionary, Dictionary};
 use crate::geometry::Geometry;
 
 pub struct App {
@@ -13,23 +13,20 @@ pub struct App {
     glyphs: Glyphs,
     settings: Settings,
     phrase: Phrase,
-    dictionary: Dictionary,
+    dictionary: Box<Dictionary>,
     geometry: Geometry,
 }
 
 impl App {
     pub fn new(settings: Settings) -> App {
-        let window: PistonWindow = WindowSettings::new("Typical", [settings.width, settings.height])
-            .opengl(OpenGL::V4_5)
-            .build()
-            .unwrap();
+        let window: PistonWindow = WindowSettings::new("Typical", [settings.width, settings.height]).build().unwrap();
         let glyphs: Glyphs = Glyphs::new(&settings.font, window.factory.clone(), TextureSettings::new()).unwrap();
         App {
             window,
             glyphs,
             settings,
             phrase: Phrase::new(),
-            dictionary: Dictionary::new(),
+            dictionary: load_dictionary(String::from("dictionaries/common.txt")).unwrap(),
             geometry: Geometry::new(),
         }
     }
@@ -70,7 +67,7 @@ impl App {
 
             let origin = context.transform.trans(
                 (size.width as f64 - geometry.width) / 2.0,
-                (size.height as f64 + geometry.height) / 2.0 - 3.0);
+                (size.height as f64 + geometry.height - 6.0) / 2.0);
             let mut x: f64 = 0.0;
 
             let mut image = Image::new_color(settings.completed);
