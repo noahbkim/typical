@@ -13,7 +13,7 @@ pub struct App {
     glyphs: Glyphs,
     settings: Settings,
     phrase: Phrase,
-    dictionary: Box<Dictionary>,
+    dictionary: Option<Box<Dictionary>>,
     geometry: Geometry,
 }
 
@@ -26,7 +26,7 @@ impl App {
             glyphs,
             settings,
             phrase: Phrase::new(),
-            dictionary: load_dictionary(String::from("dictionaries/common.txt")).unwrap(),
+            dictionary: Some(load_dictionary(String::from("dictionaries/common.txt")).unwrap()),
             geometry: Geometry::new(),
         }
     }
@@ -59,8 +59,8 @@ impl App {
         let geometry: &Geometry = &self.geometry;
         let size: Size = self.window.size();
         let text: &String = &self.phrase.text;
-        let cursor: &usize = &self.phrase.cursor;
-        let wrong: &bool = &self.phrase.wrong;
+        let cursor: usize = self.phrase.cursor;
+        let wrong: bool = self.phrase.wrong;
 
         self.window.draw_2d(event, |context, graphics| {
             clear(settings.background, graphics);
